@@ -18,7 +18,7 @@ import dgl.function as fn
 
 import numpy as np
 import torch
-import torch.linalg as la
+import torch.linalg as LA
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -41,7 +41,7 @@ torch.manual_seed(0) #seed for random numbers
 
 
 #gets our data from the file "data.p"
-file = open("mini.p", "rb")
+file = open("t_feat_data.p", "rb")
 dataset = pickle.load(file)
 file.close()
 
@@ -89,9 +89,9 @@ Y_test = torch.stack(Y_test).float #convert list to tensor
 g_top = dataset.train_inputs()[0]
 
 #dynamics defined by two GCN layers
-gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=7, out_feats=64, 
+gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=8, out_feats=64, 
                               dropout=0.5, activation=nn.Softplus()),
-                  GCNLayer1(g=g_top, in_feats=64, out_feats=7, 
+                  GCNLayer1(g=g_top, in_feats=64, out_feats=8, 
                             dropout=0.5, activation=None)
                   ).to(device)
 
@@ -140,8 +140,8 @@ for batch in range(train_n_batches):
             
         y = batch_Y[observation]
         
-        MAPE = la.norm((torch.abs(y - y_pred) / torch.abs(y)), 
-                       ord=2).detach().item()
+        MAPE = LA.norm((torch.abs(y - y_pred) / torch.abs(y)), 
+                        ord=2).detach().item()
         loss = criterion(y_pred,y)
             
         losses.append(loss)
@@ -198,9 +198,9 @@ with torch.no_grad():
             nfe = model.gnode_func.nfe #store nfe in forward pass
             
             y = batch_Y[observation]
-            with torch.no_grad():
-                MAPE = la.norm((torch.abs(y - y_pred) / torch.abs(y)),
-                               ord=2).item()
+        
+            MAPE = LA.norm((torch.abs(y - y_pred) / torch.abs(y)),
+                            ord=2).item()
             loss = criterion(y_pred,y)
             
             MAPEs.append(MAPE)
@@ -231,7 +231,7 @@ plt.title('Loss')
 plt.legend()
 
        
-#making a new plot for MAPE 
+# making a new plot for MAPE 
 plt.figure()
 
 train_MAPE_plt = np.array(train_MAPE_plt)
@@ -241,3 +241,10 @@ plt.plot(train_x_plt, train_MAPE_plt, 'blue', label='training MAPE')
 plt.plot(test_x_plt, test_MAPE_plt, 'orange', label='testing MAPE')
 plt.title('MAPE')
 plt.legend()
+
+        
+        
+
+
+
+
