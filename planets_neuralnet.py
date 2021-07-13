@@ -89,9 +89,9 @@ Y_test = torch.stack(Y_test).float #convert list to tensor
 g_top = dataset.train_inputs()[0]
 
 #dynamics defined by two GCN layers
-gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=7, out_feats=40, 
+gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=7, out_feats=64, 
                               dropout=0.5, activation=nn.Softplus()),
-                  GCNLayer1(g=g_top, in_feats=40, out_feats=7, 
+                  GCNLayer1(g=g_top, in_feats=64, out_feats=7, 
                             dropout=0.5, activation=None)
                   ).to(device)
 
