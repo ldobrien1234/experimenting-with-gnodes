@@ -14,3 +14,30 @@ which are serialized and exported to a file.
 
 Lastly, planets_neuralnet.py is a GNODE that learns the final mass, position, and velocity of the planets given an initial feature matrix (like the
 one described above).
+
+
+Citations:
+
+
+@article{chen2021eventfn,
+  title={Learning Neural Event Functions for Ordinary Differential Equations},
+  author={Chen, Ricky T. Q. and Amos, Brandon and Nickel, Maximilian},
+  journal={International Conference on Learning Representations},
+  year={2021}
+}
+
+
+@article{chen2018neuralode,
+  title={Neural Ordinary Differential Equations},
+  author={Chen, Ricky T. Q. and Rubanova, Yulia and Bettencourt, Jesse and Duvenaud, David},
+  journal={Advances in Neural Information Processing Systems},
+  year={2018}
+}
+
+
+@article{poli2019graph,
+  title={Graph Neural Ordinary Differential Equations},
+  author={Poli, Michael and Massaroli, Stefano and Park, Junyoung and Yamashita, Atsushi and Asama, Hajime and Park, Jinkyoo},
+  journal={arXiv preprint arXiv:1911.07532},
+  year={2019}
+}
