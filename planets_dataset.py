@@ -87,7 +87,7 @@ class PlanetDataset(DGLDataset):
             
     
 
-SIZE_DATASET = 1000 #of input, target pairs we want to create
+SIZE_DATASET = 20000 #of input, target pairs we want to create
 MAX_TIME = 60*60*24*365*10**5 # max final time in seconds
 
 
@@ -99,7 +99,8 @@ final_times = nprand.uniform(0, MAX_TIME, SIZE_DATASET)
 def feat_matrix(f_time):
     """
     Given the final time of our planets, we can create two feature matrices
-    that have the mass, position, and velocity of each planet
+    that have the final time, mass, position, and velocity for each 
+    planet.
     
     Parameters
     ----------
@@ -115,16 +116,21 @@ def feat_matrix(f_time):
     MASS = torch.from_numpy(MASS)
     MASS = MASS.reshape(5,1) #makes into column vector
     
+    #we want to make the final time part of the feature matrix
+    #so the neuralnet can learn variable time data
+    TIME = torch.tensor([f_time]*5)
+    TIME = TIME.reshape(5,1)
+    
     #Finding the initial feature matrix of positions and velocities
     np_init_h = final.y[::,0] #initial position, velocity
     np_init_h = np.reshape(np_init_h, (5,6)) #changes from vector to matrix
     #converts to tensor, appends mass in 0th column, new assignment
-    initial_h = torch.cat((MASS, torch.from_numpy(np_init_h)), 1) 
+    initial_h = torch.cat((TIME, MASS, torch.from_numpy(np_init_h)), 1) 
     
     np_fin_h = final.y[::,-1] #final position, velocity
     np_fin_h = np.reshape(np_fin_h, (5,6)) #changes from vector to matrix
     #converts to tensor, appends mass in 0th column, new assignmnet
-    final_h = torch.cat((MASS, torch.from_numpy(np_fin_h)), 1) 
+    final_h = torch.cat((TIME, MASS, torch.from_numpy(np_fin_h)), 1) 
     
     return (initial_h, final_h)
 
@@ -210,14 +216,14 @@ def create_dataset():
     for data_index in range(SIZE_DATASET):
         
         #get a final time
-        f_time = MAX_TIME #use final_times[data index] for random time
+        f_time = final_times[data_index] #getting random final time
         #complete a simulation of planets up to the final time
         (initial_h, final_h) = feat_matrix(f_time)
         
         #now that we have the feature matrices, we want the graph structure
         #I will use a complete graph with weighted edges based on distance
-        init_positions = initial_h[::, 1:4]
-        fin_positions = final_h[::, 1:4]
+        init_positions = initial_h[::, 2:5]
+        fin_positions = final_h[::, 2:5]
         
         (init_distances,
          fin_distances,
@@ -265,7 +271,7 @@ if __name__ == "__main__":
         
     
     #save our data to a file named "data.p"
-    file = open("mini.p", "wb")
+    file = open("t_feat_data.p", "wb")
     pickle.dump(dataset, file)
     file.close()
 
@@ -275,5 +281,5 @@ if __name__ == "__main__":
     
     
     
-    
-    
+  
+   
