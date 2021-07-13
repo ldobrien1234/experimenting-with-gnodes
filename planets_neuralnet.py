@@ -18,6 +18,7 @@ import dgl.function as fn
 
 import numpy as np
 import torch
+import torch.linalg as la
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -40,7 +41,7 @@ torch.manual_seed(0) #seed for random numbers
 
 
 #gets our data from the file "data.p"
-file = open("fix_t_data.p", "rb")
+file = open("mini.p", "rb")
 dataset = pickle.load(file)
 file.close()
 
@@ -115,7 +116,7 @@ test_n_batches = int(test_steps / minibatch)
 
 num_grad_steps = 0
 
-
+train_MAPE_plt = []
 train_y_plt = []
 #running the training loop
 
@@ -126,7 +127,8 @@ for batch in range(train_n_batches):
 
     batch_X = X_train[batch*minibatch:(batch+1)*minibatch]
     batch_Y = Y_train[batch*minibatch:(batch+1)*minibatch]
-
+    
+    MAPEs = []
     losses = []
     for observation in range(minibatch):
             
@@ -136,13 +138,18 @@ for batch in range(train_n_batches):
         
         nfe = model.gnode_func.nfe #store nfe in forward pass
             
-        y = batch_Y
-            
+        y = batch_Y[observation]
+        
+        MAPE = la.norm((torch.abs(y - y_pred) / torch.abs(y)), 
+                       ord=2).detach().item()
         loss = criterion(y_pred,y)
             
         losses.append(loss)
+        MAPEs.append(MAPE)
         
+    MAPE_avg = sum(MAPEs)  / len(MAPEs)
     loss_avg = sum(losses) / len(losses) #averaging over the minibatch
+    
         
     opt.zero_grad()
         
@@ -158,9 +165,11 @@ for batch in range(train_n_batches):
     
     train_loss = loss_avg.item()
     
+    print("MAPE = ", MAPE_avg)
     print("train loss = ", train_loss)
     if math.isnan(train_loss):
         break
+    train_MAPE_plt.append(MAPE_avg)
     train_y_plt.append(train_loss)
             
 
@@ -172,11 +181,13 @@ for batch in range(train_n_batches):
 with torch.no_grad():
     model.eval() #modifies forward for evaluation (e.g. no dropout)
     
+    test_MAPE_plt = []
     test_y_plt = []
     for batch in range(test_n_batches):
         batch_X = X_train[batch*minibatch:(batch+1)*minibatch]
         batch_Y = Y_train[batch*minibatch:(batch+1)*minibatch]
         
+        MAPEs = []
         losses = []
         for observation in range(minibatch):
             
@@ -186,18 +197,24 @@ with torch.no_grad():
         
             nfe = model.gnode_func.nfe #store nfe in forward pass
             
-            y = batch_Y
-            
+            y = batch_Y[observation]
+            with torch.no_grad():
+                MAPE = la.norm((torch.abs(y - y_pred) / torch.abs(y)),
+                               ord=2).item()
             loss = criterion(y_pred,y)
             
+            MAPEs.append(MAPE)
             losses.append(loss)
         
+        MAPE_avg = sum(MAPEs)  / len(MAPEs)
         loss_avg = sum(losses) / len(losses) #averaging over the minibatch
         
         test_loss = loss_avg.item()
         
+        print("MAPE = ", MAPE_avg)
         print("test loss = ", test_loss)
         
+        test_MAPE_plt.append(MAPE_avg)
         test_y_plt.append(test_loss)
     
     
@@ -205,12 +222,26 @@ with torch.no_grad():
 train_x_plt = np.array(range(len(train_y_plt)))       
 train_y_plt = np.array(train_y_plt)
 
-plt.plot(train_x_plt, train_y_plt, 'blue')
-
 test_x_plt = np.array(range(len(test_y_plt)))
 test_y_plt = np.array(test_y_plt)
 
-plt.plot(test_x_plt,test_y_plt, 'orange')
+plt.plot(train_x_plt, train_y_plt, 'blue', label='training loss')
+plt.plot(test_x_plt, test_y_plt, 'orange',label='testing loss')
+plt.title('Loss')
+plt.legend()
+
+       
+#making a new plot for MAPE 
+plt.figure()
+
+train_MAPE_plt = np.array(train_MAPE_plt)
+test_MAPE_plt = np.array(test_MAPE_plt)
+
+plt.plot(train_x_plt, train_MAPE_plt, 'blue', label='training MAPE')
+plt.plot(test_x_plt, test_MAPE_plt, 'orange', label='testing MAPE')
+plt.title('MAPE')
+plt.legend()
+
 
 
 
