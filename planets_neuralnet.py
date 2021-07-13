@@ -3,13 +3,20 @@
 Created on Thu Jul  8 11:48:18 2021
 
 Liam O'Brien
+
+This code runs a graph neural ordinary differential equation to learn
+the trajectories of five stars/planets given their initial mass,
+position, and velocity.
 """
 import pickle
 import time
+import math
+import matplotlib.pyplot as plt
 
 import dgl
 import dgl.function as fn
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -63,74 +70,148 @@ def get_features(graphs):
         
     
     
-#creating our training inputs and  (tensor of feature matrices)
+#creating our training inputs and targets (tensor of feature matrices)
 X_train = get_features(dataset.train_inputs())
+X_train = torch.stack(X_train).float() #convert list to tensor
 Y_train = get_features(dataset.train_targets())
+Y_train = torch.stack(Y_train).float() #convert list to tensor
+
+#creating our testing inputs and targets (tensor of feature matrices)
+X_test = get_features(dataset.test_inputs())
+X_test = torch.stack(X_test).float() #convert list to tensor
+Y_test = get_features(dataset.test_targets())
+Y_test = torch.stack(Y_test).float #convert list to tensor
+
+
 
 #get the structure of the graph
 g_top = dataset.train_inputs()[0]
 
 #dynamics defined by two GCN layers
-gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=7, out_feats=16, 
-                              activation=nn.Softplus(), dropout=0.9),
-                  GCNLayer1(g=g_top, in_feats=16, out_feats=7, 
-                            activation=None, dropout=0.9)
-                 ).to(device)
+gnn = nn.Sequential(GCNLayer1(g=g_top, in_feats=7, out_feats=40, 
+                              dropout=0.5, activation=nn.Softplus()),
+                  GCNLayer1(g=g_top, in_feats=40, out_feats=7, 
+                            dropout=0.5, activation=None)
+                  ).to(device)
 
 gnode_func = GNODEFunc(gnn)
 
-#ODEBlock class let's us use an ode solver to find our input at a later time
 
-gnode = ODEBlock(gnode_func, method = 'rk4') #ode too stiff for adaptive solvers
+#ODEBlock class let's us use an ode solver to find our input at a later time
+#ode too stiff for adaptive solvers
+gnode = ODEBlock(gnode_func, method = 'implicit_adams', atol=1e-3, rtol=1e-4,
+                 adjoint = True) 
 model = gnode
 
 opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
 criterion = nn.L1Loss()
 
 
-steps = len(X_train) #updating weights after each training example
-verbose_step = 300 #number of steps after which we print information
+train_steps = len(X_train)
+test_steps = len(X_test)
+minibatch = 10 #size of minibatch
+train_n_batches = int(train_steps / minibatch)
+test_n_batches = int(test_steps / minibatch)
+
 num_grad_steps = 0
 
 
-
+train_y_plt = []
 #running the training loop
-for step in range(steps):
-    model.train() #modifies forward for training (performs dropout)
-    
+
+for batch in range(train_n_batches):
+    model.train() #modifies forward for training (e.g. performs dropout)
+        
     model.gnode_func.nfe = 0 #zero nfe for next forward pass
-    
-    start_time = time.time()
-    y_pred = model(X_train[step].float())
-    f_time = time.time() - start_time #store time for forward pass
-    nfe = model.gnode_func.nfe #store nfe in forward pass
-    
-    y = Y_train[step]
-    
-    # print(torch.isnan(X_train[step].float()))
-    # print(torch.isnan(y_pred))
-    # print(torch.isnan(y))
-    
-    
-    loss = criterion(y_pred,y)
+
+    batch_X = X_train[batch*minibatch:(batch+1)*minibatch]
+    batch_Y = Y_train[batch*minibatch:(batch+1)*minibatch]
+
+    losses = []
+    for observation in range(minibatch):
+            
+        start_time = time.time()
+        y_pred = model(batch_X[observation])
+        f_time = time.time() - start_time #store time for forward pass
+        
+        nfe = model.gnode_func.nfe #store nfe in forward pass
+            
+        y = batch_Y
+            
+        loss = criterion(y_pred,y)
+            
+        losses.append(loss)
+        
+    loss_avg = sum(losses) / len(losses) #averaging over the minibatch
+        
     opt.zero_grad()
-    
+        
     start_time = time.time()
-    loss.backward()
+    loss_avg.backward()
     b_time = time.time() - start_time #store time for backward pass
     
+    #avoid exploding gradient
+    nn.utils.clip_grad_norm_(model.parameters(), 1e+5)
+        
     opt.step()
     num_grad_steps += 1
     
-    print("train loss = ", loss.item())
+    train_loss = loss_avg.item()
+    
+    print("train loss = ", train_loss)
+    if math.isnan(train_loss):
+        break
+    train_y_plt.append(train_loss)
+            
 
+
+
+
+
+#using testing data
+with torch.no_grad():
+    model.eval() #modifies forward for evaluation (e.g. no dropout)
+    
+    test_y_plt = []
+    for batch in range(test_n_batches):
+        batch_X = X_train[batch*minibatch:(batch+1)*minibatch]
+        batch_Y = Y_train[batch*minibatch:(batch+1)*minibatch]
         
+        losses = []
+        for observation in range(minibatch):
+            
+            start_time = time.time()
+            y_pred = model(batch_X[observation])
+            f_time = time.time() - start_time #store time for forward pass
+        
+            nfe = model.gnode_func.nfe #store nfe in forward pass
+            
+            y = batch_Y
+            
+            loss = criterion(y_pred,y)
+            
+            losses.append(loss)
+        
+        loss_avg = sum(losses) / len(losses) #averaging over the minibatch
+        
+        test_loss = loss_avg.item()
+        
+        print("test loss = ", test_loss)
+        
+        test_y_plt.append(test_loss)
     
     
+     
+train_x_plt = np.array(range(len(train_y_plt)))       
+train_y_plt = np.array(train_y_plt)
 
+plt.plot(train_x_plt, train_y_plt, 'blue')
 
-        
-        
+test_x_plt = np.array(range(len(test_y_plt)))
+test_y_plt = np.array(test_y_plt)
+
+plt.plot(test_x_plt,test_y_plt, 'orange')
+
 
 
 
