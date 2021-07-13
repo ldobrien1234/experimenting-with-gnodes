@@ -241,9 +241,3 @@ plt.plot(train_x_plt, train_MAPE_plt, 'blue', label='training MAPE')
 plt.plot(test_x_plt, test_MAPE_plt, 'orange', label='testing MAPE')
 plt.title('MAPE')
 plt.legend()
-
-
-
-
-
-
