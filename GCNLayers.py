@@ -2,7 +2,10 @@
 """
 Created on Thu Jul  8 15:10:09 2021
 
-@author: obrie
+@author: Liam O'Brien
+
+This file contains classes, which help us define the forward
+pass of our neural network.
 """
 import math
 from typing import Callable
