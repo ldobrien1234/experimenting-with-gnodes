@@ -8,8 +8,8 @@ the planets’ trajectories.
 
 The second file, planets_dataset.py, runs the planets_simulation.py a specified number of times to create a graph dataset. In the graphs, the planets 
 are represented by nodes. Each graph is complete, the nodes have self-loops, and the edges are weighted with Euclidean distance between the planets. 
-The node features are a 5 x 8 matrix where each row represents a planet. The first column gives the final time; the second gives the mass; columns 2-4 
-give the x, y, and z coordinates; and columns 5-7 give the x, y, and z components of velocity. The input and target graphs are contained in two lists, 
+The node features are a 5 x 8 matrix where each row represents a planet. The first column gives the final time; the second gives the mass; columns 3-45
+give the x, y, and z coordinates; and columns 6-8 give the x, y, and z components of velocity. The input and target graphs are contained in two lists, 
 which are serialized and exported to a file.
 
 Lastly, planets_neuralnet.py is a GNODE that learns the final mass, position, and velocity of the planets given an initial feature matrix (like the
