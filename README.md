@@ -1,14 +1,14 @@
 # experimenting-with-gnodes
-I am creating a Graph Neural Ordinary Differential Equation (GNODE) for modeling Newtonian gravity.
+I created a Graph Neural Ordinary Differential Equation (GNODE) for modeling Newtonian gravity.
 
-I decided to create a dataset that models a system of interacting planets/stars. The planets_simulation.py program randomizes the initial mass, 
+First, I made a dataset that models a system of interacting planets/stars. The planets_simulation.py program randomizes the initial mass, 
 position, and velocity of five planets. Newtonian gravity gives a second order ODE for the position, and the code uses numerical integration to 
 solve for the final mass, position, and velocity of the planets at some specified final time. If you run the code, it will also provide graphs of 
 the planets’ trajectories.
 
 The second file, planets_dataset.py, runs the planets_simulation.py a specified number of times to create a graph dataset. In the graphs, the planets 
 are represented by nodes. Each graph is complete, the nodes have self-loops, and the edges are weighted with Euclidean distance between the planets. 
-The node features are a 5 x 8 matrix where each row represents a planet. The first column gives the final time; the second gives the mass; columns 3-45
+The node features are a 5 x 8 matrix where each row represents a planet. The first column gives the final time; the second gives the mass; columns 3-5
 give the x, y, and z coordinates; and columns 6-8 give the x, y, and z components of velocity. The input and target graphs are contained in two lists, 
 which are serialized and exported to a file.
 
