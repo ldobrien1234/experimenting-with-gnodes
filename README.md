@@ -4,7 +4,9 @@ I created a Graph Neural Ordinary Differential Equation (GNODE) for modeling New
 First, I made a dataset that models a system of interacting planets/stars. The planets_simulation.py program randomizes the initial mass, 
 position, and velocity of five planets. Newtonian gravity gives a second order ODE for the position, and the code uses numerical integration to 
 solve for the final mass, position, and velocity of the planets at some specified final time. If you run the code, it will also provide graphs of 
-the planets’ trajectories.
+the planets’ trajectories, like below.
+
+![planets](https://user-images.githubusercontent.com/86622061/129949417-71ca94bd-70f9-465a-9991-19c83b909654.png)
 
 The second file, planets_dataset.py, runs the planets_simulation.py a specified number of times to create a graph dataset. In the graphs, the planets 
 are represented by nodes. Each graph is complete, the nodes have self-loops, and the edges are weighted with Euclidean distance between the planets. 
